@@ -1,4 +1,18 @@
 # AUTOMATIC MAC ADDRESS CHANGER macOS High Sierra (10.13+)
+MAC Auto Changer is a lightweight macOS utility that automatically randomizes your Wi-Fi MAC address at system startup and at scheduled intervals.
+It runs as a LaunchDaemon, works in the background, and helps improve network privacy, testing flexibility, and device identity rotation.
+
+Features
+
+- Automatic MAC address randomization
+
+- Runs at boot and on a fixed interval
+
+- Works silently in the background
+
+- Compatible with macOS (tested on High Sierra)
+
+Logging and manual control available
 
 --------------------------------
 ## 1. INSTALL THE SCRIPT

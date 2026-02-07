@@ -1,0 +1,171 @@
+# ИНСТРУКЦИЯ ПО УСТАНОВКЕ АВТОМАТИЧЕСКОЙ СМЕНЫ MAC-АДРЕСА
+# macOS High Sierra (10.13)
+
+--------------------------------
+## ШАГ 1: УСТАНОВКА СКРИПТА
+--------------------------------
+
+1. Откройте Терминал (Finder → Программы → Утилиты → Терминал)
+
+2. Скопируйте скрипт change_mac.sh в /usr/local/bin/:
+   
+   sudo mkdir -p /usr/local/bin
+   sudo cp change_mac.sh /usr/local/bin/
+   sudo chmod +x /usr/local/bin/change_mac.sh
+
+Проверка:
+ls -l /usr/local/bin/change_mac.sh
+
+Должно быть:
+-rwxr-xr-x
+
+--------------------------------
+## ШАГ 2: СОЗДАНИЕ ФАЙЛОВ ЛОГОВ (ВАЖНО - ДО ЗАПУСКА СЕРВИСА!)
+--------------------------------
+
+   sudo touch /var/log/mac_changer.log
+   sudo touch /var/log/mac_changer_out.log
+   sudo touch /var/log/mac_changer_err.log
+   sudo chmod 644 /var/log/mac_changer.log
+   sudo chmod 644 /var/log/mac_changer_out.log
+   sudo chmod 644 /var/log/mac_changer_err.log
+
+--------------------------------
+## ШАГ 3: УСТАНОВКА LAUNCHDAEMON
+--------------------------------
+
+1. Скопируйте plist файл в системную папку LaunchDaemons:
+   
+   sudo cp com.user.macchanger.plist /Library/LaunchDaemons/
+
+
+2. Установите правильные права доступа:
+   
+   sudo chmod 644 /Library/LaunchDaemons/com.user.macchanger.plist
+   sudo chown root:wheel /Library/LaunchDaemons/com.user.macchanger.plist
+
+--------------------------------
+## ШАГ 4: ЗАГРУЗКА И ЗАПУСК СЕРВИСА
+--------------------------------
+
+1. Загрузите LaunchDaemon:
+   
+   sudo launchctl load /Library/LaunchDaemons/com.user.macchanger.plist
+
+2. Проверьте, что сервис запущен:
+   
+   sudo launchctl list | grep macchanger
+
+--------------------------------
+## ШАГ 5: ПРОВЕРКА РАБОТЫ
+--------------------------------
+
+1. Узнайте ваш Wi-Fi интерфейс:
+   
+   networksetup -listallhardwareports
+
+2. Проверьте текущий MAC-адрес (замените en0 на ваш интерфейс):
+   
+   ifconfig en0 | grep ether
+   # или
+   ifconfig en1 | grep ether
+
+3. Проверьте лог файл:
+   
+   sudo tail -f /var/log/mac_changer.log
+
+4. Для немедленного тестирования (не ждать час):
+   
+   sudo /usr/local/bin/change_mac.sh
+
+--------------------------------
+## УПРАВЛЕНИЕ СЕРВИСОМ
+--------------------------------
+
+Остановить автоматическую смену:
+   sudo launchctl unload /Library/LaunchDaemons/com.user.macchanger.plist
+
+Запустить снова:
+   sudo launchctl load /Library/LaunchDaemons/com.user.macchanger.plist
+
+Удалить полностью:
+   sudo launchctl unload /Library/LaunchDaemons/com.user.macchanger.plist
+   sudo rm /Library/LaunchDaemons/com.user.macchanger.plist
+   sudo rm /usr/local/bin/change_mac.sh
+   sudo rm /var/log/mac_changer*.log
+
+
+## ВАЖНЫЕ ЗАМЕЧАНИЯ
+
+✅ ИСПРАВЛЕНИЯ В НОВОЙ ВЕРСИИ:
+- Скрипт теперь запускается от root через launchd (без sudo внутри)
+- Автоматическое определение Wi-Fi интерфейса (en0, en1, en2)
+- Поддержка разных путей к утилите airport
+- Правильное создание лог-файлов с нужными правами
+
+⚠️ ВНИМАНИЕ:
+- Смена MAC-адреса временно отключает Wi-Fi на несколько секунд
+- MAC-адрес сбрасывается к оригинальному после перезагрузки системы
+- При смене MAC-адреса может потребоваться повторное подключение к Wi-Fi сетям
+- Скрипт автоматически определяет ваш Wi-Fi интерфейс (en0, en1 и т.д.)
+
+--------------------------------
+## РУЧНАЯ НАСТРОЙКА ИНТЕРФЕЙСА (если автоопределение не работает)
+--------------------------------
+
+Чтобы узнать ваш Wi-Fi интерфейс:
+   networksetup -listallhardwareports
+
+Если скрипт не может определить интерфейс автоматически, отредактируйте его:
+   sudo nano /usr/local/bin/change_mac.sh
+   
+И в начале скрипта после строки:
+   # Автоматическое определение Wi-Fi интерфейса
+   
+Добавьте строку (например, для en1):
+   INTERFACE="en1"
+
+--------------------------------
+## НАСТРОЙКА ПЕРИОДИЧНОСТИ
+--------------------------------
+
+По умолчанию MAC-адрес меняется каждый час (3600 секунд).
+
+Чтобы изменить интервал:
+1. Отредактируйте файл:
+   sudo nano /Library/LaunchDaemons/com.user.macchanger.plist
+
+2. Измените значение в строке:
+   <integer>3600</integer>
+   
+   Например:
+   - 30 минут: 1800
+   - 2 часа: 7200
+   - 10 минут: 600
+
+3. Перезагрузите сервис:
+   sudo launchctl unload /Library/LaunchDaemons/com.user.macchanger.plist
+   sudo launchctl load /Library/LaunchDaemons/com.user.macchanger.plist
+
+--------------------------------
+## ДИАГНОСТИКА ПРОБЛЕМ
+--------------------------------
+
+Если что-то не работает, проверьте:
+
+1. Логи ошибок:
+   sudo cat /var/log/mac_changer_err.log
+
+2. Логи вывода:
+   sudo cat /var/log/mac_changer_out.log
+
+3. Основной лог:
+   sudo cat /var/log/mac_changer.log
+
+4. Статус сервиса:
+   sudo launchctl list | grep macchanger
+
+5. Права на файлы:
+   ls -la /usr/local/bin/change_mac.sh
+   ls -la /Library/LaunchDaemons/com.user.macchanger.plist
+   ls -la /var/log/mac_changer*.log
